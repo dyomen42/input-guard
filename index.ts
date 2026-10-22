@@ -5,6 +5,9 @@ import { tmpdir } from "node:os"
 
 const MAX_INPUT_TOKENS = 15000
 const MAX_READ_LINES = 150
+// Output budget floor. Truncated answers come from a low maxTokens, not from
+// the input size, so this is raised here when the request leaves it unset/low.
+const MIN_OUTPUT_TOKENS = Number(process.env.INPUT_GUARD_MAX_OUTPUT ?? 32000)
 const LOG = join(tmpdir(), "input-guard.log")
 
 function log(line: string) {
@@ -31,6 +34,14 @@ export default Plugin.define({
 
     // Keep the per-turn input under MAX_INPUT_TOKENS by dropping old messages.
     await ctx.session.hook("context", (event: any) => {
+      // Output budget: a low maxTokens truncates answers mid-sentence.
+      const options = (event.options ??= {})
+      const current = Number(options.maxTokens ?? 0)
+      if (Number.isFinite(MIN_OUTPUT_TOKENS) && MIN_OUTPUT_TOKENS > 0 && current < MIN_OUTPUT_TOKENS) {
+        options.maxTokens = MIN_OUTPUT_TOKENS
+        log(`output maxTokens ${current || "unset"} -> ${MIN_OUTPUT_TOKENS}`)
+      }
+
       const messages: any[] = Array.isArray(event.messages) ? event.messages : []
       if (messages.length < 3) return
 

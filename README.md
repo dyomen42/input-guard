@@ -28,7 +28,8 @@ Sebelum naik terus, sesudah stabil di bawah 15.000 token.
 2. Hook `session.context` memperkirakan token (`panjang JSON / 4`).
 3. Jika melebihi 15.000, pesan lama dibuang dari belakang sampai muat. Pesan pertama, system prompt, dan catatan yang disuntikkan ikut dihitung ke budget, dengan reserve 400 token.
 4. Catatan dipush ke `system`: jumlah pesan yang dipangkas dan instruksi membaca `STATE.md`.
-5. Setiap keputusan dicatat ke `%TEMP%/input-guard.log` (atau `$TMPDIR`).
+5. `options.maxTokens` dinaikkan ke minimal 32.000 agar jawaban tidak terpotong karena batas output, bukan karena input. Atur lewat `INPUT_GUARD_MAX_OUTPUT`.
+6. Setiap keputusan dicatat ke `%TEMP%/input-guard.log` (atau `$TMPDIR`).
 
 ## Pemasangan
 
@@ -70,6 +71,7 @@ tail -n 10 "$TMPDIR/input-guard.log"
 - Pemangkasan membuang pesan utuh, bukan merangkumnya. Detail lama hilang; karena itu `STATE.md` dianjurkan sebagai handoff.
 - Hook `ctx.tool.hook("execute.before")` dan `ctx.session.hook("context")` adalah API internal/eksperimental. Namanya bisa berubah antar versi OpenCode.
 - Tidak ada deduplikasi output tool yang identik.
+- Batas output hanya bisa dinaikkan sampai plafon model. Jika provider mematok angka lebih rendah, jawaban tetap terpotong; plugin tidak bisa melampaui plafon itu.
 
 ## Lisensi
 
